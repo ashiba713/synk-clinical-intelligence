@@ -1,0 +1,1 @@
+"""SYNK Streamlit dashboard package."""

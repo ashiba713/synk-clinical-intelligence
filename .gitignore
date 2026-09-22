@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Testing / tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+mlruns/
+mlartifacts/
+
+# Environment / secrets
+.env
+*.local.yaml
+
+# Data (never commit clinical or generated data)
+data/raw/*
+data/interim/*
+data/processed/*
+data/synthetic/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/synthetic/.gitkeep
+data/*.db
+
+# Artifacts
+artifacts/*
+!artifacts/README.md
+
+# Notebooks
+notebooks/**/.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Freebuff workspace
+.freebuff/
+
+# Freebuff project metadata
+project-id

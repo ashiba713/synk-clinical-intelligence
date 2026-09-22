@@ -1,0 +1,17 @@
+# Inference-time overrides layered on top of configs/base.yaml.
+# The inference engine merges the model checkpoint's saved config with these values,
+# so the encoder settings below only matter when building a fresh engine/demo baseline.
+
+model:
+  text:
+    encoder_type: tfidf          # keep "tfidf" for offline demo mode
+
+uncertainty:
+  mc_dropout_samples: 30
+  mc_dropout_min_samples: 5
+
+inference:
+  engine: auto                   # auto | torch | sklearn (sklearn = lightweight demo baseline)
+
+api:
+  load_synthetic_on_start: true

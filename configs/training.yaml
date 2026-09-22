@@ -1,0 +1,29 @@
+# Training-time overrides layered on top of configs/base.yaml.
+# Usage: python scripts/train.py --config configs/training.yaml --set training.max_epochs=2
+
+labels:
+  source: latent_outcomes
+  horizon_hours: 6
+  stride_hours: 2
+  min_history_hours: 8
+
+model:
+  modality: both
+  temporal:
+    hidden_dim: 64
+  text:
+    encoder_type: tfidf
+  fusion:
+    type: gated
+
+training:
+  batch_size: 64
+  lr: 0.001
+  max_epochs: 30
+  early_stopping_patience: 6
+
+calibration:
+  method: isotonic
+
+tracking:
+  backend: none

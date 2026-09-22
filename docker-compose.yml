@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    image: synk:latest
+    container_name: synk-api
+    command: ["python", "-m", "scripts.cli", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - SYNK_ENV=development
+      - DATABASE_URL=sqlite:///data/synk_demo.db
+      # - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - synk-data:/app/data
+      - synk-artifacts:/app/artifacts
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    image: synk:latest
+    container_name: synk-dashboard
+    command: ["python", "-m", "scripts.cli", "dashboard", "--port", "8501", "--headless"]
+    ports:
+      - "8501:8501"
+    environment:
+      - SYNK_ENV=development
+    volumes:
+      - synk-data:/app/data
+      - synk-artifacts:/app/artifacts
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Optional experiment-tracking backend. Uncomment to enable, and set
+  # SYNK_TRACKING__BACKEND=mlflow + MLFLOW_TRACKING_URI on the api service.
+  # mlflow:
+  #   image: ghcr.io/mlflow/mlflow:latest
+  #   command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db
+  #   ports: ["5000:5000"]
+  #   volumes: ["mlflow-data:/mlflow"]
+
+volumes:
+  synk-data:
+  synk-artifacts:

@@ -1,0 +1,131 @@
+# SYNK base configuration.
+# Every key maps to a typed field in src/synk/config/settings.py.
+# Override per-run with a second config file (configs/training.yaml) or env vars:
+#   SYNK_<SECTION>__<KEY>=value   e.g. SYNK_MODEL__TEMPORAL__HIDDEN_DIM=128
+
+seed: 42
+env: development          # development | research (never clinical production)
+log_level: INFO
+
+paths:
+  data_dir: data
+  artifact_dir: artifacts
+  checkpoint_dir: artifacts/checkpoints
+  model_registry_dir: artifacts/models
+  run_dir: artifacts/runs
+  report_dir: artifacts/reports
+  evaluation_dir: artifacts/evaluation
+
+data:
+  dataset_id: synthetic_v1
+  raw_dir: data/raw
+  synthetic_dir: data/synthetic
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+synthetic:
+  n_patients: 120
+  stays_per_patient: [1, 2]
+  min_stay_hours: 36
+  max_stay_hours: 96
+  sepsis_prevalence: 0.30
+  missingness_rate: 0.10
+  noise_scale: 1.0
+  include_demo_scenarios: true
+  output_dir: data/synthetic
+
+preprocessing:
+  observation_window_hours: 12
+  sampling_interval_hours: 1
+  imputation: forward_fill_then_median
+  forward_fill_limit_hours: 6
+  winsorize_quantiles: [0.001, 0.999]
+  add_missingness_indicators: true
+  derive_map: true
+  standardize: zscore
+  text_deid: true              # redact date-like/long digit runs in notes before storage
+
+labels:
+  source: latent_outcomes      # latent_outcomes | criteria
+  horizon_hours: 6
+  stride_hours: 2
+  min_history_hours: 8
+  exclude_after_onset: true
+  criteria:
+    antibiotic_window_hours: 24
+    culture_window_hours: 24
+    derangement_threshold: 2
+  splits:
+    method: stratified_group
+    train_frac: 0.7
+    val_frac: 0.15
+    test_frac: 0.15
+
+model:
+  modality: both               # both | structured | text
+  temporal:
+    hidden_dim: 64
+    lstm_layers: 1
+    dropout: 0.15
+    attention_heads: 4
+    use_static: true
+  text:
+    encoder_type: tfidf        # transformer | tfidf
+    model_name: emilyalsentzer/Bio_ClinicalBERT
+    max_length: 128
+    max_notes: 3
+    text_lookback_hours: 24
+    tfidf_max_features: 4096
+    embedding_dim: 128
+  fusion:
+    type: gated                # concat | gated | cross_attention
+    hidden_dim: 128
+    dropout: 0.2
+  head_hidden: 64
+
+loss:
+  type: bce_weighted           # bce_weighted | focal | bce
+  focal_gamma: 2.0
+
+training:
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  max_epochs: 30
+  gradient_clip_val: 1.0
+  scheduler: cosine            # cosine | plateau | none
+  early_stopping_patience: 6
+  num_workers: 0
+  accelerator: auto            # auto | cpu | gpu
+  precision: 32
+  fast_dev_run: false
+
+evaluation:
+  threshold: 0.5
+  risk_thresholds: [0.30, 0.60, 0.80]
+  bootstrap_n: 200
+  bootstrap_ci: 0.95
+
+calibration:
+  method: isotonic             # isotonic | platt | none
+
+uncertainty:
+  mc_dropout_samples: 30
+  mc_dropout_min_samples: 5
+
+inference:
+  engine: auto                 # auto | torch | sklearn
+  baseline_path: ""
+
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins: ["*"]
+  load_synthetic_on_start: true
+  default_db_url: sqlite:///data/synk_demo.db
+
+tracking:
+  backend: none                # mlflow | none
+  mlflow_tracking_uri: ""
+  experiment_name: synk
+  wandb_project: ""
