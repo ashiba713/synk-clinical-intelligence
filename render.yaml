@@ -1,0 +1,48 @@
+# SYNK — Render Blueprint
+#
+# Deploys two services from this repository:
+#   synk-api       FastAPI backend  (health at /health, docs at /docs)
+#   synk-dashboard Streamlit UI     (health at /_stcore/health)
+#
+# Research prototype — not for clinical diagnosis or treatment.
+# Deploys use the SYNTHETIC demo cohort only. Never connect real clinical data
+# to a public deployment.
+#
+# Usage: Render dashboard -> New + -> Blueprint -> select this repo -> Apply.
+
+services:
+  - type: web
+    name: synk-api
+    runtime: python
+    plan: free
+    buildCommand: >-
+      pip install -r requirements.txt
+      && pip install -e . --no-deps
+      && python -m scripts.cli generate-data --n-patients 40
+    startCommand: python -m scripts.cli serve --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SYNK_ENV
+        value: development
+      - key: SYNK_LOG_LEVEL
+        value: INFO
+
+  - type: web
+    name: synk-dashboard
+    runtime: python
+    plan: free
+    buildCommand: >-
+      pip install -r requirements.txt
+      && pip install -e . --no-deps
+      && python -m scripts.cli generate-data --n-patients 40
+    startCommand: python -m scripts.cli dashboard --port $PORT --headless
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: SYNK_ENV
+        value: development
+      - key: SYNK_LOG_LEVEL
+        value: INFO
