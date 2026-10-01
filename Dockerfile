@@ -21,11 +21,11 @@ COPY scripts/ ./scripts/
 COPY app/ ./app/
 COPY configs/ ./configs/
 COPY pyproject.toml ./
-COPY tests/ ./tests/
 
 RUN pip install --no-cache-dir --no-deps -e .
 
-# Generate synthetic demo data during image build
+COPY tests/ ./tests/
+
 RUN python -m scripts.cli generate-data --n-patients 40
 
 EXPOSE 8501
