@@ -222,6 +222,7 @@ def apply_theme() -> None:
         "xtick.color": TEXT_SECONDARY,
         "ytick.color": TEXT_SECONDARY,
 
+
         # Matplotlib does NOT accept CSS rgba(...) strings here.
         "grid.color": "#FFFFFF",
         "grid.alpha": 0.08,

@@ -72,7 +72,7 @@ def sidebar() -> str:
             """,
             unsafe_allow_html=True,
         )
-        page = st.radio("Navigation", PAGES, label_opacity=0)
+        page = st.radio("Navigation", PAGES)
         st.divider()
 
         try:
@@ -254,7 +254,16 @@ def page_patients() -> None:
             "Horizon (h)": r["prediction_horizon_hours"],
             "Last update": str(r["t"])[:16],
         })
-    table = pd.DataFrame(rows)
+    table = pd.DataFrame(rows, columns=[
+    "Patient",
+    "Encounter",
+    "Age",
+    "Risk",
+    "Category",
+    "Δ Risk",
+    "Horizon (h)",
+    "Last update",
+])
 
     st.dataframe(
         table.style.format({"Risk": "{:.3f}", "Δ Risk": "{:+.3f}"})
@@ -318,7 +327,7 @@ def page_patient_analysis() -> None:
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=pd.to_datetime(enc_preds["t"]), y=enc_preds["risk_probability"],
-            mode="lines+markers", line={{"color": PRIMARY, "width": 2}}, name="Risk",
+            mode="lines+markers", line={"color": PRIMARY, "width": 2}, name="Risk",
             hovertemplate="%{x|%m-%d %H:%M} · %{y:.3f}<extra></extra>",
         ))
         onset = outcome["sepsis_onset_timestamp"].iloc[0] if len(outcome) else None
@@ -327,7 +336,8 @@ def page_patient_analysis() -> None:
                           annotation_text="sepsis onset (research label)", annotation_position="top")
         for thr, name in zip(ds._get_config().evaluation.risk_thresholds, ["moderate", "high", "critical"]):
             fig.add_hline(y=thr, line={"color": BORDER, "width": 1}, opacity=0.6)
-        fig.update_layout(**layout, height=300, yaxis={"range": [0, 1.02], **layout["yaxis"]})
+        layout["yaxis"]["range"] = [0, 1.02]
+        fig.update_layout(**layout, height=300)
         st.plotly_chart(fig, use_container_width=True)
     with right:
         st.markdown("##### Why SYNK flags this patient")
@@ -375,7 +385,7 @@ def page_patient_analysis() -> None:
         for i, var in enumerate(display_vars):
             s = obs[["timestamp", var]].dropna()
             fig.add_trace(go.Scatter(x=s["timestamp"], y=s[var], mode="lines", name=var,
-                                     line={{"color": palette[i % len(palette)], "width": 1.8}}))
+                                     line={"color": palette[i % len(palette)], "width": 1.8}))
         if len(outcome) and pd.notna(outcome["sepsis_onset_timestamp"].iloc[0]):
             fig.add_vline(x=pd.Timestamp(outcome["sepsis_onset_timestamp"].iloc[0]),
                           line={"color": DANGER, "dash": "dot", "width": 1})
@@ -459,16 +469,16 @@ def page_model_performance() -> None:
         fpr = [p["fpr"] for p in roc]
         tpr = [p["tpr"] for p in roc]
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", line={{"color": PRIMARY}}))
+        fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", line={"color": PRIMARY}))
         fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
-                                 line={{"color": BORDER, "dash": "dash"}}, showlegend=False))
+                                 line={"color": BORDER, "dash": "dash"}, showlegend=False))
         fig.update_layout(**plotly_layout(), height=280, title=f"AUROC {auroc['value']:.3f}")
         st.plotly_chart(fig, use_container_width=True)
     with mid:
         st.markdown("###### Precision–Recall")
         pr = report["pr_curve"]
         fig = go.Figure(go.Scatter(x=[p["recall"] for p in pr], y=[p["precision"] for p in pr],
-                                   mode="lines", line={{"color": SUCCESS}}))
+                                   mode="lines", line={"color": SUCCESS}))
         fig.update_layout(**plotly_layout(), height=280, title=f"AUPRC {auprc['value']:.3f}")
         st.plotly_chart(fig, use_container_width=True)
     with right:
@@ -476,9 +486,9 @@ def page_model_performance() -> None:
         cal = report["calibration_curve"]
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=[p["mean_predicted"] for p in cal], y=[p["observed_frequency"] for p in cal],
-                                 mode="lines+markers", line={{"color": WARNING}}))
+                                 mode="lines+markers", line={"color": WARNING}))
         fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
-                                 line={{"color": BORDER, "dash": "dash"}}, showlegend=False))
+                                 line={"color": BORDER, "dash": "dash"}, showlegend=False))
         fig.update_layout(**plotly_layout(), height=280, title=f"ECE {report['ece']:.3f}")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -625,7 +635,14 @@ def page_reports() -> None:
         from synk.reporting.report import build_patient_report, save_report
 
         service = ds.get_service()
-        frame = service.predict_encounters(*_frames(), encounter_ids=[enc_id]).sort_values("t")
+        patients, observations, notes, outcomes = _frames()
+        frame = service.predict_encounters(
+    observations,
+    notes,
+    outcomes,
+    patients,
+    encounter_ids=[enc_id],
+).sort_values("t")
         latest = frame.tail(1).iloc[0]
         patients, observations, notes, outcomes = _frames()
         ss = service.featurizer.build(observations, notes, outcomes, patients)[0]

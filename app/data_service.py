@@ -23,11 +23,18 @@ def _get_config():
 
 @lru_cache(maxsize=1)
 def load_frames():
-    """Load (patients, observations, notes, outcomes), generating if needed."""
     from synk.pipeline import load_or_generate_data
-
     cfg = _get_config()
-    return load_or_generate_data(cfg)
+    patients, observations, notes, outcomes = load_or_generate_data(cfg)
+
+    print("=== SYNK DEBUG DATA ===")
+    print("patients:", patients.shape, list(patients.columns))
+    print("observations:", observations.shape, list(observations.columns))
+    print("notes:", None if notes is None else (notes.shape, list(notes.columns)))
+    print("outcomes:", outcomes.shape, list(outcomes.columns))
+    print("=======================")
+
+    return patients, observations, notes, outcomes
 
 
 @lru_cache(maxsize=1)

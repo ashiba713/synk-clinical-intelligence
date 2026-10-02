@@ -154,11 +154,31 @@ class EncounterFeaturizer:
     def build(self, observations, notes, outcomes, patients) -> tuple[SampleSet, Any]:
         """Return (sample_set, label_table) for the supplied raw frames."""
         assert self.preprocessor is not None, "featurizer not fitted"
+
+        observations = observations.copy(deep=True)
+        notes = notes.copy(deep=True) if notes is not None else None
+        outcomes = outcomes.copy(deep=True) if outcomes is not None else None
+        patients = patients.copy(deep=True) if patients is not None else None
+        print("🔥 BEFORE VITALS:", observations.shape, list(observations.columns))
         cleaned = self.preprocessor.transform(observations)
         label_table = build_label_table(observations, outcomes, self.config)
-        static_frame = patients[[c for c in ("patient_id", "age", "sex", "weight") if c in patients.columns]] \
-            if patients is not None and len(patients) else pd.DataFrame(columns=["patient_id"])
-        sample_set = build_samples(cleaned, notes, label_table, static_frame, self.config)
+
+        static_frame = (
+            patients[
+                [c for c in ("patient_id", "age", "sex", "weight") if c in patients.columns]
+            ]
+            if patients is not None and len(patients)
+            else pd.DataFrame(columns=["patient_id"])
+        )
+
+        sample_set = build_samples(
+            cleaned,
+            notes,
+            label_table,
+            static_frame,
+            self.config,
+        )
+
         return sample_set, label_table
 
 
